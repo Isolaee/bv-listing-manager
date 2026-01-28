@@ -195,13 +195,7 @@ add_action('template_redirect', function () {
 
     if (!WC()->cart) wc_load_cart();
 
-    // Remove all items without triggering "removed" notices
-    foreach (array_keys(WC()->cart->get_cart()) as $cart_key) {
-        WC()->cart->set_quantity($cart_key, 0, false);
-    }
-    WC()->cart->set_removed_cart_contents(array());
-    WC()->session->set('removed_cart_contents', array());
-
+    WC()->cart->empty_cart();
     WC()->cart->add_to_cart($product_id);
     wc_clear_notices();
 
@@ -215,9 +209,15 @@ add_action('template_redirect', function () {
 Extra action to clear stale carts and suppress pop-ups
 ============================== */
 add_action('template_redirect', function () {
+    // Strip ?removed_item param on listing pages — it triggers
+    // WooCommerce Blocks' "item removed / undo?" client-side banner
+    if (isset($_GET['removed_item']) && is_page(['jata-ilmoitus', 'create-osaketori', 'create-osakeanti', 'create-velkakirja'])) {
+        wp_safe_redirect(remove_query_arg('removed_item'));
+        exit;
+    }
+
     if (!function_exists('wc_clear_notices')) return;
-    
-    // Clear stale cart notices on listing-related pages
+
     if (is_page(['create-osaketori', 'create-osakeanti', 'create-velkakirja'])) {
         wc_clear_notices();
     }
