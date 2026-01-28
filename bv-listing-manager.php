@@ -196,14 +196,8 @@ add_action('template_redirect', function () {
     if (!WC()->cart) wc_load_cart();
 
     WC()->cart->empty_cart();
-    WC()->cart->set_removed_cart_contents(array());
     WC()->cart->add_to_cart($product_id);
     wc_clear_notices();
-
-    // Force the session to persist the cleared removed-cart-contents
-    // so WooCommerce Blocks doesn't render an "undo removal" banner
-    WC()->session->set('removed_cart_contents', array());
-    WC()->session->save_data();
 
     WC()->session->set('bv_pending_post_id', $post_id);
 
@@ -215,17 +209,17 @@ add_action('template_redirect', function () {
 Extra action to clear stale carts and suppress pop-ups
 ============================== */
 add_action('template_redirect', function () {
-    // Strip ?removed_item param on listing pages — it triggers
-    // WooCommerce Blocks' "item removed / undo?" client-side banner
-    if (isset($_GET['removed_item']) && is_page(['jata-ilmoitus', 'create-osaketori', 'create-osakeanti', 'create-velkakirja'])) {
-        wp_safe_redirect(remove_query_arg('removed_item'));
-        exit;
-    }
-
     if (!function_exists('wc_clear_notices')) return;
 
-    if (is_page(['create-osaketori', 'create-osakeanti', 'create-velkakirja'])) {
+    if (is_page(['jata-ilmoitus', 'create-osaketori', 'create-osakeanti', 'create-velkakirja'])) {
         wc_clear_notices();
+
+        // Hide WooCommerce Blocks "item removed / undo?" banner —
+        // it's rendered client-side via Store API and cannot be
+        // suppressed with PHP notice clearing
+        add_action('wp_head', function () {
+            echo '<style>.wc-block-components-notice-banner.is-success { display: none !important; }</style>';
+        });
     }
 }, 5);
 
