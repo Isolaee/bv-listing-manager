@@ -196,8 +196,14 @@ add_action('template_redirect', function () {
     if (!WC()->cart) wc_load_cart();
 
     WC()->cart->empty_cart();
+    WC()->cart->set_removed_cart_contents(array());
     WC()->cart->add_to_cart($product_id);
     wc_clear_notices();
+
+    // Force the session to persist the cleared removed-cart-contents
+    // so WooCommerce Blocks doesn't render an "undo removal" banner
+    WC()->session->set('removed_cart_contents', array());
+    WC()->session->save_data();
 
     WC()->session->set('bv_pending_post_id', $post_id);
 
