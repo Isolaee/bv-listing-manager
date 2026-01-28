@@ -195,11 +195,14 @@ add_action('template_redirect', function () {
 
     if (!WC()->cart) wc_load_cart();
 
-    WC()->cart->empty_cart();
-    WC()->cart->add_to_cart($product_id);
+    // Remove all items without triggering "removed" notices
+    foreach (array_keys(WC()->cart->get_cart()) as $cart_key) {
+        WC()->cart->set_quantity($cart_key, 0, false);
+    }
+    WC()->cart->set_removed_cart_contents(array());
+    WC()->session->set('removed_cart_contents', array());
 
-    // Clear all notices after cart operations to suppress
-    // "item removed" / "undo" notices from empty_cart()
+    WC()->cart->add_to_cart($product_id);
     wc_clear_notices();
 
     WC()->session->set('bv_pending_post_id', $post_id);
