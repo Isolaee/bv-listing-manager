@@ -219,7 +219,7 @@ Extra action to clear stale carts and suppress pop-ups
 add_action('template_redirect', function () {
     if (!function_exists('wc_clear_notices')) return;
 
-    if (is_page(['jata-ilmoitus', 'create-osaketori', 'create-osakeanti', 'create-velkakirja'])) {
+    if (is_page(['jata-ilmoitus', 'create-osaketori', 'create-osakeanti', 'create-velkakirja', 'create-myy-yritys'])) {
         wc_clear_notices();
 
         // Hide WooCommerce Blocks "item removed / undo?" banner —
@@ -933,7 +933,7 @@ add_action('woocommerce_account_my-listings_endpoint', function () {
             $type_label = 'Osaketori-ilmoitus';
         } elseif (has_term('Velkakirja', 'category', $post_id)) {
             $type_label = 'Velkakirja-ilmoitus';
-        } elseif (has_term('myy-yritys', 'category', $post_id)) {
+        } elseif (has_term('Myy Yritys', 'category', $post_id)) {
             $type_label = 'Myy Yritys-ilmoitus';
         }
 
