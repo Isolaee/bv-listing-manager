@@ -41,7 +41,7 @@ function bv_lm_set_category_for_listing($post_id, $listing_type) {
         $slug = 'osaketori';
     } elseif ($listing_type === 'velkakirja') {
         $slug = 'velkakirjat';
-    } elseif ($listing_type === 'Myy Yritys') {
+    } elseif ($listing_type === 'myy-yritys') {
         $slug = 'myy-yritys';
     }
 
@@ -120,6 +120,8 @@ if (!function_exists('bv_lm_get_resume_url_for_draft')) {
                 $type = 'osaketori';
             } elseif (has_term('Velkakirja', 'category', $post_id)) {
                 $type = 'velkakirja';
+            } elseif (has_term('Myy Yritys', 'category', $post_id)) {
+                $type = 'myy-yritys';
             }
         }
 
@@ -127,6 +129,8 @@ if (!function_exists('bv_lm_get_resume_url_for_draft')) {
             return add_query_arg(['post_id' => $post_id], home_url('/create-osakeanti/'));
         } elseif ($type === 'velkakirja') {
             return add_query_arg(['post_id' => $post_id], home_url('/create-velkakirja/'));
+        } elseif ($type === 'myy-yritys') {
+            return add_query_arg(['post_id' => $post_id], home_url('/create-myy-yritys/'));
         }
 
         return add_query_arg(['post_id' => $post_id], home_url('/create-osaketori/'));
