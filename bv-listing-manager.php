@@ -43,6 +43,7 @@ function bv_lm_set_category_for_listing($post_id, $listing_type) {
         $slug = 'velkakirjat';
     } elseif ($listing_type === 'Myy Yritys') {
         $slug = 'myy-yritys';
+    }
 
     if (!$slug) return;
 
@@ -902,7 +903,7 @@ add_action('woocommerce_account_my-listings_endpoint', function () {
         'tax_query'      => [[
             'taxonomy' => 'category',
             'field'    => 'name',
-            'terms'    => ['Osakeannit', 'Osaketori', 'Velkakirjat'],
+            'terms'    => ['Osakeannit', 'Osaketori', 'Velkakirjat', 'Myy Yritys'],
         ]],
     ]);
 
@@ -928,6 +929,8 @@ add_action('woocommerce_account_my-listings_endpoint', function () {
             $type_label = 'Osaketori-ilmoitus';
         } elseif (has_term('Velkakirja', 'category', $post_id)) {
             $type_label = 'Velkakirja-ilmoitus';
+        } elseif (has_term('myy-yritys', 'category', $post_id)) {
+            $type_label = 'Myy Yritys-ilmoitus';
         }
 
         $created_ts = get_post_time('U', true, $post_id);
@@ -1045,7 +1048,7 @@ add_action('woocommerce_account_draft-listings_endpoint', function () {
         'tax_query'      => [[
             'taxonomy' => 'category',
             'field'    => 'name',
-            'terms'    => ['Osakeannit', 'Osaketori', 'Velkakirjat'],
+            'terms'    => ['Osakeannit', 'Osaketori', 'Velkakirjat', 'Myy Yritys'],
         ]],
     ]);
 
@@ -1071,6 +1074,8 @@ add_action('woocommerce_account_draft-listings_endpoint', function () {
             $category_name = 'Osaketori';
         } elseif (has_term('Velkakirjat', 'category', $post_id)) {
             $category_name = 'Velkakirjat';
+        } elseif (has_term('Myy Yritys', 'category', $post_id)) {
+            $category_name = 'Myy Yritys';
         }
 
         $type_label = $category_name ? ($category_name . '-ilmoitus') : 'Luonnos';
@@ -1195,7 +1200,7 @@ add_action('wp_ajax_bv_save_listing_draft', function () {
 
     // Listing type + category
     $type = isset($_POST['bv_listing_type']) ? sanitize_text_field((string) $_POST['bv_listing_type']) : '';
-    if ($type && in_array($type, ['osakeanti', 'osaketori', 'velkakirja'], true)) {
+    if ($type && in_array($type, ['osakeanti', 'osaketori', 'velkakirja', 'myy-yritys'], true)) {
         update_post_meta($post_id, '_bv_listing_type', $type);
         bv_lm_set_category_for_listing($post_id, $type);
     }
@@ -1274,7 +1279,7 @@ add_action('wp_ajax_bv_save_listing_draft', function () {
 
 add_action('wp_footer', function () {
 
-    if (!is_page(['create-osaketori', 'create-osakeanti', 'create-velkakirja'])) return;
+    if (!is_page(['create-osaketori', 'create-osakeanti', 'create-velkakirja', 'create-myy-yritys'])) return;
 
     $nonce = wp_create_nonce('bv_save_draft');
     $ajax  = admin_url('admin-ajax.php');
@@ -1351,7 +1356,7 @@ add_action('wp_footer', function () {
  */
 add_action('wp_head', function () {
 
-    if (!is_page(['create-osaketori', 'create-osakeanti', 'create-velkakirja'])) return;
+    if (!is_page(['create-osaketori', 'create-osakeanti', 'create-velkakirja', 'create-myy-yritys'])) return;
     ?>
     <script>
     (function () {
