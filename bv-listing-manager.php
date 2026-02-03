@@ -30,6 +30,7 @@ function bv_lm_get_product_for_listing_type($type) {
  * osakeanti -> osakeannit
  * osaketori -> osaketori
  * velkakirja -> velkakirjat
+ * Myy Yritys -> myy-yritys
  */
 function bv_lm_set_category_for_listing($post_id, $listing_type) {
 
@@ -40,7 +41,8 @@ function bv_lm_set_category_for_listing($post_id, $listing_type) {
         $slug = 'osaketori';
     } elseif ($listing_type === 'velkakirja') {
         $slug = 'velkakirjat';
-    }
+    } elseif ($listing_type === 'Myy Yritys') {
+        $slug = 'myy-yritys';
 
     if (!$slug) return;
 
@@ -595,8 +597,34 @@ if (!function_exists('bv_edit_listing_shortcode')) {
             $heading_txt = '';
             $file_field  = 'markkinointimateriaali_tiedosto';
 
+        } elseif (has_term('Myy Yritys', 'category', $post_id)) {
+
+            $fields = [
+                'ilmoituksen_otsikko',
+                'yrityksen_nimi',
+                'Y-tunnus',
+                'verkkosivu_url',
+                'Luokitus',
+                'yrityksen_toimiala',
+                'sijainti',
+                'sijainti_kaupunki',
+                'henkilosto',
+                'ilmoitusteksti',
+                'liikevaihto',
+                'tulos_viimeisin',
+                'tavoitteet_2026',
+                'yritys_valuaatio',
+                'hintaluokka',
+                'kuva',
+                'videopitch',
+                'markkinointimateriaali_tiedosto',
+                'markkinointimateriaalin_nimi',
+                'yrityksen_myy',
+                'valittajan_yhteystiedot',
+            ];
+
         } else {
-            return 'Tällä ilmoituksella ei ole Osakeannit, Osaketori tai velkakirjat kategoriaa.';
+            return 'Tällä ilmoituksella ei ole Osakeannit, Osaketori, velkakirjat tai myy-yritys kategoriaa.';
         }
 
         if (empty($fields)) {
