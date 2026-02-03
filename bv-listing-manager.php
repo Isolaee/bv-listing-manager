@@ -20,6 +20,7 @@ function bv_lm_get_product_for_listing_type($type) {
         'osakeanti' => 772,
         'osaketori' => 773,
         'velkakirja' => 1722,
+        'myy-yritys' =>  2390,
     ];
     return isset($map[$type]) ? (int) $map[$type] : 0;
 }
