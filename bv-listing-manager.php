@@ -478,170 +478,23 @@ if (!function_exists('bv_edit_listing_shortcode')) {
             return esc_html($post->get_error_message());
         }
 
-        $fields      = [];
         $heading_txt = '';
-        $file_field  = '';
 
-        if (has_term('Osakeannit', 'category', $post_id)) {
+        // Dynamically get all ACF fields assigned to this post
+        // This reads field group location rules, so when admin adds/removes/renames
+        // fields in ACF, the edit form updates automatically.
+        $field_objects = function_exists('get_field_objects') ? get_field_objects($post_id, false) : false;
 
-            $fields = [
-                'ilmoituksen_otsikko',
-                'y-tunnus',
-                'yrityksen_nimi',
-                'verkkosivu_url',
-                'yrityksen_perustamisvuosi',
-                'luokitus',
-                'yrityksen_toimiala',
-                'sijainti_maakunta',
-                'sijanti_kaupunki',
-                'henkilosto',
-                'ilmoitusteksti',
-                'liikevaihto',
-                'tulos_viimeisin',
-                'tavoitteet_2026',
-                'valuaatio',
-                'osakeannin_koko',
-                'minimisijoitus',
-                'maksimisijoitus',
-                'osakeannin_kpl_maara',
-                'osakkeiden_kpl_maara_ennen_antia',
-                'osakeannin_tila',
-                'haemme_lisaa_osaamista',
-                'kuvaus_osaamistarpeista',
-                'kuva',
-                'videopitch',
-                'markkinointimateriaali_tiedosto',
-                'markkinointimateriaalin_nimi',
-                'lisatieto',
-                'linkki_osakeanti',
-            ];
-
-            $heading_txt = '';
-            $file_field  = 'markkinointimateriaali_tiedosto';
-
-        } elseif (has_term('Osaketori', 'category', $post_id)) {
-
-            $fields = [
-                'ilmoituksen_otsikko',
-                'y-tunnus',
-                'yrityksen_nimi',
-                'verkkosivu_url',
-                'yrityksen_perustamisvuosi',
-                'luokitus',
-                'yrityksen_toimiala',
-                'sijainti_maakunta',
-                'sijainti_kaupunki',
-                'henkilosto',
-                'ilmoitusteksti',
-                'liikevaihto',
-                'tulos_viimeisin',
-                'onko_osakkeella_kaupankayntirajoituksia',
-                'lisatieto_kaupankayntirajoitukset',
-                'myytavien_osakkeiden_maara',
-                'osuus_yrityksen_osakkeista',
-                'valuaatiot',
-                'hintapyynto',
-                'hintaluokka',
-                'kuva',
-                'markkinointimateriaali_tiedosto',
-                'markkinointimateriaalin_nimi',
-                'lisatieto',
-            ];
-
-            $heading_txt = '';
-            $file_field  = 'markkinointimateriaali_tiedosto';
-            
-        } elseif (has_term('Velkakirjat', 'category', $post_id)) {
-
-            $fields = [
-                'ilmoituksen_otsikko',
-                'y-tunnus',
-                'yrityksen_nimi',
-                'verkkosivu_url',
-                'yrityksen_perustamisvuosi',
-                'luokitus',
-                'yrityksen_toimiala',
-                'sijainti_maakunta',
-                'sijainti_kaupunki',
-                'henkilosto',
-                'ilmoitusteksti',
-                'liikevaihto',
-                'tulos_viimeisin',
-                'talouden_tila',
-                'lainan_kokonaismaara',
-                'velkakirjan_tyyppi',
-                'minimimerkinta_velkakirja',
-                'velkakirjan_erapaiva',
-                'velkakirjan_lainaaika',
-                'velkakirjan_korkotyyppi',
-                'lainan_nimelliskorko',
-                'korkojakso',
-                'maksutiheys',
-                'takaukset_vakuudet',
-                'senioriteetti',
-                'velkakirjan_oikeudet_rajoitukset',
-                'konversion_aikaikkuna',
-                'konversio_tapa',
-                'konversiohinnan_maarittely_vk',
-                'konversiohinta_fixed_vk',
-                'konversiohinta_discount',
-                'konversiohinta_valuationcap',
-                'konversio_exit_triggerit',
-                'konversio_tulos',
-                'konversio_osakelaji',
-                'osakkeiden_aanioikeus',
-                'osakkeiden_osinkooikeus',
-                'mahdolliset_rajoitukset',
-                'laimennusvaikutus',
-                'onko_muita_lainoja',
-                'lainaan_liittyvat_riskit',
-                'lainan_muut_ehdot',
-                'kuva',
-                'videopitch',
-                'markkinointimateriaali_tiedosto',
-                'markkinointimateriaalin_nimi',
-                'haluatko_lisata_lisatiedon',
-                'lisatieto',
-            ];
-
-            $heading_txt = '';
-            $file_field  = 'markkinointimateriaali_tiedosto';
-
-        } elseif (has_term('Myy Yritys', 'category', $post_id)) {
-
-            $fields = [
-                'ilmoituksen_otsikko',
-                'y-tunnus',
-                'yrityksen_nimi',
-                'anonyymi_ilmoitus',
-                'verkkosivu_url',
-                'yrityksen_perustamisvuosi',
-                'luokitus',
-                'yrityksen_toimiala',
-                'sijainti_maakunta',
-                'sijainti_kaupunki',
-                'henkilosto',
-                'ilmoitusteksti',
-                'liikevaihto',
-                'tulos_viimeisin',
-                'tavoitteet_2026',
-                'yritys_valuaatio',
-                'hintaluokka',
-                'kuva',
-                'videopitch',
-                'markkinointimateriaali_tiedosto',
-                'markkinointimateriaalin_nimi',
-                'yrityksen_myy',
-                'valittajan_yhteystiedot',
-            ];
-
-        } else {
-            return 'Tällä ilmoituksella ei ole Osakeannit, Osaketori, velkakirjat tai myy-yritys kategoriaa.';
-        }
-
-        if (empty($fields)) {
+        if (!$field_objects || !is_array($field_objects)) {
             return 'Tälle ilmoitustyypille ei ole määritelty muokattavia kenttiä.';
         }
+
+        $fields = array_keys($field_objects);
+
+        // Detect file field for showing current marketing material
+        $file_field = in_array('markkinointimateriaali_tiedosto', $fields, true)
+            ? 'markkinointimateriaali_tiedosto'
+            : '';
 
         if (!function_exists('acf_form')) {
             return 'ACF ei ole käytettävissä.';
