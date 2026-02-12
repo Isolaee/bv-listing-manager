@@ -7,6 +7,11 @@
 
 if (!defined('ABSPATH')) exit;
 
+const EXCLUDED_ACF_FIELDS_EDITS = [
+    'y-tunnus',
+    'Y-tunnus',
+];
+
 /* =============================================================================
    0) BASIC HELPERS
 ============================================================================= */
@@ -489,7 +494,7 @@ if (!function_exists('bv_edit_listing_shortcode')) {
             return 'Tälle ilmoitustyypille ei ole määritelty muokattavia kenttiä.';
         }
 
-        $fields = array_keys($field_objects);
+        $fields = array_diff(array_keys($field_objects), EXCLUDED_ACF_FIELDS_EDITS);
 
         // Detect file field for showing current marketing material
         $file_field = in_array('markkinointimateriaali_tiedosto', $fields, true)
