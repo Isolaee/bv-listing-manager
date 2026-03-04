@@ -154,9 +154,6 @@ add_action('acf/save_post', function ($post_id) {
     if (!function_exists('get_field')) return;
 
     $title = (string) get_field('Ilmoituksen_otsikko', $post_id);
-    if ($title === '') {
-        $title = (string) get_field('Ilmoituksen_otsikko', $post_id);
-    }
 
     if ($title !== '') {
         wp_update_post([
@@ -485,21 +482,33 @@ if (!function_exists('bv_edit_listing_shortcode')) {
 
         $heading_txt = '';
 
-        // Dynamically get all ACF fields assigned to this post
-        // This reads field group location rules, so when admin adds/removes/renames
-        // fields in ACF, the edit form updates automatically.
-        $field_objects = function_exists('get_field_objects') ? get_field_objects($post_id, false) : false;
+        // Fetch fields from ACF field group definitions (not from post meta),
+        // so newly added fields appear in the edit form even before any value has been saved.
+        $field_keys = [];
+        $file_field  = '';
+        if (function_exists('acf_get_field_groups') && function_exists('acf_get_fields')) {
+            $groups = acf_get_field_groups(['post_id' => $post_id]);
+            foreach ($groups as $group) {
+                $group_fields = acf_get_fields($group['key']);
+                if (is_array($group_fields)) {
+                    foreach ($group_fields as $field) {
+                        if (in_array($field['name'], EXCLUDED_ACF_FIELDS_EDITS, true)) {
+                            continue;
+                        }
+                        $field_keys[] = $field['key'];
+                        if ($field['name'] === 'markkinointimateriaali_tiedosto') {
+                            $file_field = 'markkinointimateriaali_tiedosto';
+                        }
+                    }
+                }
+            }
+        }
 
-        if (!$field_objects || !is_array($field_objects)) {
+        if (empty($field_keys)) {
             return 'Tälle ilmoitustyypille ei ole määritelty muokattavia kenttiä.';
         }
 
-        $fields = array_diff(array_keys($field_objects), EXCLUDED_ACF_FIELDS_EDITS);
-
-        // Detect file field for showing current marketing material
-        $file_field = in_array('markkinointimateriaali_tiedosto', $fields, true)
-            ? 'markkinointimateriaali_tiedosto'
-            : '';
+        $fields = $field_keys;
 
         if (!function_exists('acf_form')) {
             return 'ACF ei ole käytettävissä.';
@@ -761,9 +770,8 @@ add_action('woocommerce_account_my-listings_endpoint', function () {
     $user_id = get_current_user_id();
     $paged   = get_query_var('paged') ? (int) get_query_var('paged') : 1;
 
-    $query = new WP_Query([
+    $query_args = [
         'post_type'      => 'post',
-        'author'         => current_user_can('manage_options')?'':$user_id,
         'post_status'    => ['publish'],
         'orderby'        => 'date',
         'order'          => 'DESC',
@@ -774,13 +782,18 @@ add_action('woocommerce_account_my-listings_endpoint', function () {
             'field'    => 'name',
             'terms'    => ['Osakeannit', 'Osaketori', 'Velkakirjat', 'Myy Yritys'],
         ]],
-    ]);
+    ];
+    if (!current_user_can('manage_options')) {
+        $query_args['author'] = $user_id;
+    }
+    $query = new WP_Query($query_args);
 
     echo '<h2>Omat ilmoitukset</h2>';
-    echo '<div class="my-listing-item" style="margin-top:20px; border-top:1px solid #ddd; padding-top:10px; padding-bottom:10px;">';
-    
+    echo '<div class="my-listings-wrapper" style="margin-top:20px; border-top:1px solid #ddd; padding-top:10px; padding-bottom:10px;">';
+
     if (!$query->have_posts()) {
         echo 'Sinulla ei ole vielä ilmoituksia.';
+        echo '</div>';
         return;
     }
 
@@ -846,6 +859,8 @@ add_action('woocommerce_account_my-listings_endpoint', function () {
     if ($pagination) {
         echo '<div class="my-listings-pagination">' . $pagination . '</div>';
     }
+
+    echo '</div>'; // .my-listings-wrapper
 
     wp_reset_postdata();
 });
@@ -922,10 +937,11 @@ add_action('woocommerce_account_draft-listings_endpoint', function () {
     ]);
 
     echo '<h2>Omat luonnokset</h2>';
-    echo '<div class="my-listing-item" style="margin-top:20px; border-top:1px solid #ddd; padding-top:10px; padding-bottom:10px;">';
+    echo '<div class="my-listings-wrapper" style="margin-top:20px; border-top:1px solid #ddd; padding-top:10px; padding-bottom:10px;">';
 
     if (!$query->have_posts()) {
         echo 'Sinulla ei ole vielä luonnoksia.';
+        echo '</div>';
         return;
     }
 
@@ -1015,6 +1031,8 @@ add_action('woocommerce_account_draft-listings_endpoint', function () {
         echo '<div class="my-listings-pagination">' . $pagination . '</div>';
     }
 
+    echo '</div>'; // .my-listings-wrapper
+
     wp_reset_postdata();
 });
 
@@ -1079,8 +1097,9 @@ add_action('wp_ajax_bv_save_listing_draft', function () {
         foreach ($_POST['acf'] as $field_key => $value) {
             update_field($field_key, $value, $post_id);
         }
-        
-            // Save ACF FILE uploads (image/file fields) coming via FormData
+    }
+
+    // Save ACF FILE uploads (image/file fields) coming via FormData
     if (!empty($_FILES['acf']) && !empty($_FILES['acf']['name']) && is_array($_FILES['acf']['name'])) {
 
         // Media handling helpers
@@ -1131,13 +1150,11 @@ add_action('wp_ajax_bv_save_listing_draft', function () {
             }
         }
     }
-    }
 
     // Update WP title after saving fields
     $title = '';
     if (function_exists('get_field')) {
         $title = (string) get_field('Ilmoituksen_otsikko', $post_id);
-        if ($title === '') $title = (string) get_field('Ilmoituksen_otsikko', $post_id);
     }
     if ($title !== '') {
         wp_update_post(['ID' => $post_id, 'post_title' => wp_strip_all_tags($title)]);
