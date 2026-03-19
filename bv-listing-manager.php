@@ -273,6 +273,9 @@ function bv_lm_publish_from_order($order_id, $source_hook = '') {
         if ($session_id) {
             $post_id = $session_id;
             $order->add_order_note("BV LM: fallback listing from session: $post_id");
+            // Persist to order meta so subsequent hooks (payment_complete, thankyou) can find it
+            $order->update_meta_data('_bv_pending_post_id', $post_id);
+            $order->save();
         }
     }
 
@@ -290,23 +293,36 @@ function bv_lm_publish_from_order($order_id, $source_hook = '') {
     $status = get_post_status($post_id);
     if (!in_array($status, ['draft', 'pending'], true)) {
         $order->add_order_note("BV LM: post $post_id has status '$status', not publishing.");
+        // Already published by a previous hook — clear session if still set
+        if (function_exists('WC') && WC()->session) {
+            WC()->session->__unset('bv_pending_post_id');
+        }
         return;
     }
 
-    $update = wp_update_post([
+    // Ensure the post has a non-empty title so WordPress 5.6+ won't reject the publish
+    $update_args = [
         'ID'          => (int) $post_id,
         'post_status' => 'publish',
-    ], true);
+    ];
+    if (empty($post->post_title)) {
+        $acf_title = function_exists('get_field') ? (string) get_field('Ilmoituksen_otsikko', $post_id) : '';
+        $update_args['post_title'] = $acf_title !== '' ? wp_strip_all_tags($acf_title) : 'Ilmoitus #' . $post_id;
+    }
+
+    $update = wp_update_post($update_args, true);
 
     if (is_wp_error($update)) {
         $order->add_order_note('BV LM: error publishing post ' . $post_id . ': ' . $update->get_error_message());
-    } else {
-        $order->add_order_note("BV LM: post $post_id published successfully.");
-
-        // Mark as paid so republish later will not require checkout
-        update_post_meta($post_id, '_bv_listing_paid', 1);
-        update_post_meta($post_id, '_bv_last_paid_order_id', (int) $order_id);
+        // Do NOT clear session on failure — let next hook retry via session fallback
+        return;
     }
+
+    $order->add_order_note("BV LM: post $post_id published successfully.");
+
+    // Mark as paid so republish later will not require checkout
+    update_post_meta($post_id, '_bv_listing_paid', 1);
+    update_post_meta($post_id, '_bv_last_paid_order_id', (int) $order_id);
 
     if (function_exists('WC') && WC()->session) {
         WC()->session->__unset('bv_pending_post_id');
