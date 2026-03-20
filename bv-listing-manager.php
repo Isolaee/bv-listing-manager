@@ -1210,6 +1210,9 @@ add_action('wp_footer', function () {
             var form = btn.closest('form');
             if (!form) return;
 
+            // Flush TinyMCE editor content to textareas before capturing form data
+            if (typeof tinymce !== 'undefined') { tinymce.triggerSave(); }
+
             var fd = new FormData(form);
 
             var pid = currentPostId();
